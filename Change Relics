@@ -25,7 +25,7 @@ local function equipRelic(relicName)
         }
     }
     relicRemote:FireServer(unpack(args))
-    task.wait(0.6) -- delay đã tăng lên
+    task.wait(0.4) -- delay đã tăng lên
 end
 
 local function equipLowRelics(mobType)
@@ -74,7 +74,7 @@ local function monitorMob(mob, mobType)
             task.wait(0.3)
             local currentHP = parseHPText(hpLabel.Text)
 
-            if currentHP <= 5e21 then -- 5Sx
+            if currentHP <= 1e22 then -- 10Sx
                 if not lowEquipped then
                     equipLowRelics(mobType)
                     lowEquipped = true
