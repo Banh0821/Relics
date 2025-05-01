@@ -1,0 +1,113 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local relicRemote = ReplicatedStorage:WaitForChild("BridgeNet2"):WaitForChild("dataRemoteEvent")
+local enemiesFolder = workspace:WaitForChild("__Main"):WaitForChild("__Enemies"):WaitForChild("Client")
+
+local relicConfig = {
+    Laruda = {
+        LowHP = {"BrokenLogf395f81", "Scooter0b49064"},
+        HighHP = {"WinterCrowf05071e", "SoulFragment71108ff"}
+    },
+    Snow = {
+        LowHP = {"AnbuMask9c1088f", "Star8f30af7"},
+        HighHP = {"WinterCrowf05071e", "SoulFragment71108ff"}
+    }
+}
+
+local function equipRelic(relicName)
+    local args = {
+        [1] = {
+            [1] = {
+                ["Name"] = relicName,
+                ["Event"] = "RelicAction",
+                ["Action"] = "Equip"
+            },
+            [2] = "\11"
+        }
+    }
+    relicRemote:FireServer(unpack(args))
+    task.wait(0.6) -- delay đã tăng lên
+end
+
+local function equipLowRelics(mobType)
+    for _, relic in ipairs(relicConfig[mobType].LowHP) do
+        equipRelic(relic)
+    end
+end
+
+local function equipHighRelics(mobType)
+    for _, relic in ipairs(relicConfig[mobType].HighHP) do
+        equipRelic(relic)
+    end
+end
+
+local function parseHPText(text)
+    local num, suffix = text:match("([%d%.]+)([A-Za-z]*)")
+    local value = tonumber(num or "0")
+    local multipliers = {
+        K = 1e3, M = 1e6, B = 1e9, T = 1e12,
+        Q = 1e15, Qa = 1e15, Qi = 1e18,
+        Sx = 1e21, Sp = 1e24, Oc = 1e27,
+        No = 1e30, De = 1e33
+    }
+    if suffix and multipliers[suffix] then
+        return value * multipliers[suffix]
+    end
+    return value
+end
+
+local function monitorMob(mob, mobType)
+    task.spawn(function()
+        local hpLabel
+
+        for _, obj in ipairs(mob:GetDescendants()) do
+            if obj:IsA("TextLabel") and obj.Text:find("HP") then
+                hpLabel = obj
+                break
+            end
+        end
+        if not hpLabel then return end
+
+        local lowEquipped = false
+        local highEquipped = false
+
+        while mob.Parent and hpLabel.Text do
+            task.wait(0.3)
+            local currentHP = parseHPText(hpLabel.Text)
+
+            if currentHP <= 5e21 then -- 5Sx
+                if not lowEquipped then
+                    equipLowRelics(mobType)
+                    lowEquipped = true
+                    highEquipped = false
+                end
+            else
+                if not highEquipped then
+                    equipHighRelics(mobType)
+                    highEquipped = true
+                    lowEquipped = false
+                end
+            end
+        end
+    end)
+end
+
+local function detectMobName(mob)
+    for _, obj in ipairs(mob:GetDescendants()) do
+        if obj:IsA("TextLabel") then
+            if obj.Text:find("Laruda") then return "Laruda" end
+            if obj.Text:find("Snow") then return "Snow" end
+        end
+    end
+    return nil
+end
+
+for _, mob in ipairs(enemiesFolder:GetChildren()) do
+    local name = detectMobName(mob)
+    if name then monitorMob(mob, name) end
+end
+
+enemiesFolder.ChildAdded:Connect(function(mob)
+    task.wait(0.2)
+    local name = detectMobName(mob)
+    if name then monitorMob(mob, name) end
+end)
