@@ -3,13 +3,29 @@ local relicRemote = ReplicatedStorage:WaitForChild("BridgeNet2"):WaitForChild("d
 local enemiesFolder = workspace:WaitForChild("__Main"):WaitForChild("__Enemies"):WaitForChild("Client")
 
 local relicConfig = {
-    Laruda = {
-        LowHP = {"BrokenLogf395f81", "Scooter0b49064"},
-        HighHP = {"WinterCrowf05071e", "SoulFragment71108ff"}
+    Magma = {
+        LowHP = {
+            "AnbuMask9c1088f",
+            "Star7b9d008",
+            "ParanormalEyec26c48b"
+        },
+        HighHP = {
+            "AntArmor5ddd310",
+            "SoulFragment1704ca0",
+            "WinterCrowf5f4afd"
+        }
     },
     Snow = {
-        LowHP = {"AnbuMask9c1088f", "Star8f30af7"},
-        HighHP = {"WinterCrowf05071e", "SoulFragment71108ff"}
+        LowHP = {
+            "AnbuMask9c1088f",
+            "Star7b9d008",
+            "ParanormalEyec26c48b"
+        },
+        HighHP = {
+            "AntArmor5ddd310",
+            "SoulFragment1704ca0",
+            "WinterCrowf5f4afd"
+        }
     }
 }
 
@@ -25,17 +41,17 @@ local function equipRelic(relicName)
         }
     }
     relicRemote:FireServer(unpack(args))
-    task.wait(0.4) -- delay đã tăng lên
-end
-
-local function equipLowRelics(mobType)
-    for _, relic in ipairs(relicConfig[mobType].LowHP) do
-        equipRelic(relic)
-    end
+    task.wait(0.6)
 end
 
 local function equipHighRelics(mobType)
     for _, relic in ipairs(relicConfig[mobType].HighHP) do
+        equipRelic(relic)
+    end
+end
+
+local function equipLowRelics(mobType)
+    for _, relic in ipairs(relicConfig[mobType].LowHP) do
         equipRelic(relic)
     end
 end
@@ -74,7 +90,7 @@ local function monitorMob(mob, mobType)
             task.wait(0.3)
             local currentHP = parseHPText(hpLabel.Text)
 
-            if currentHP <= 1e22 then -- 10Sx
+            if currentHP <= 14e21 then
                 if not lowEquipped then
                     equipLowRelics(mobType)
                     lowEquipped = true
@@ -88,13 +104,16 @@ local function monitorMob(mob, mobType)
                 end
             end
         end
+
+        -- Mob đã biến mất => mặc lại relic High HP
+        equipHighRelics(mobType)
     end)
 end
 
 local function detectMobName(mob)
     for _, obj in ipairs(mob:GetDescendants()) do
         if obj:IsA("TextLabel") then
-            if obj.Text:find("Laruda") then return "Laruda" end
+            if obj.Text:find("Magma") then return "Magma" end
             if obj.Text:find("Snow") then return "Snow" end
         end
     end
